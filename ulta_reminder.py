@@ -1,6 +1,6 @@
 from datetime import date
 import smtplib
-from email.mime_text import MIMEText
+from email.mime.text import MIMEText
 import os
 
 """
