@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ulta Beauty 2026 Ticket Reminders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Ulta Beauty 2026 Ticket Reminders</h1>
+    <p>
+      This page lets you schedule browser notifications so you don’t miss Ulta Beauty World 2026 ticket drops.
+      <br />
+      <small>Keep this tab or your browser running for reminders to fire.</small>
+    </p>
+
+    <div class="section">
+      <h2>1. Enable Notifications <span class="badge">Required once</span></h2>
+      <p>Click this first so your browser will allow reminders.</p>
+      <div class="inline-actions">
+        <button id="enableNotifications">Enable Notifications</button>
+        <button id="testNotification" disabled>Send Test Notification</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <div class="section">
+      <h2>2. Quick Ulta Ticket Reminder</h2>
+      <p>
+        Default is set to the expected ticket release date/time.
+        Adjust if you want a different time in your local timezone.
+      </p>
+      <label for="ultaDateTime">Reminder date & time</label>
+      <input type="datetime-local" id="ultaDateTime" />
+      <button id="scheduleUlta" disabled>Schedule Ulta Reminder</button>
+      <small>
+        Tip: You can set this to one week before, the day of, or any time you like.
+      </small>
+    </div>
+
+    <div class="section">
+      <h2>3. Custom Reminder</h2>
+      <label for="customTitle">Notification title</label>
+      <input id="customTitle" type="text" placeholder="e.g. Check Ulta tickets now" />
+
+      <label for="customBody">Message</label>
+      <textarea id="customBody" placeholder="What do you want future-you to see?"></textarea>
+
+      <label for="customDateTime">Reminder date & time</label>
+      <input id="customDateTime" type="datetime-local" />
+
+      <button id="scheduleCustom" disabled>Schedule Custom Reminder</button>
+      <small>Reminders longer than ~24 days away might not be reliable with a single browser timer.</small>
+    </div>
+
+    <div class="section">
+      <h2>Activity Log</h2>
+      <div id="log">No reminders yet.</div>
+    </div>
+  </div>
+
+  <script>
+    const enableBtn = document.getElementById("enableNotifications");
+    const testBtn = document.getElementById("testNotification");
+    const scheduleUltaBtn = document.getElementById("scheduleUlta");
+    const scheduleCustomBtn = document.getElementById("scheduleCustom");
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+    const ultaDateTimeInput = document.getElementById("ultaDateTime");
+    const customTitleInput = document.getElementById("customTitle");
+    const customBodyInput = document.getElementById("customBody");
+    const customDateTimeInput = document.getElementById("customDateTime");
+
+    function log(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      const line = `[${timestamp}] ${message}`;
+      if (logEl.textContent === "No reminders yet.") {
+        logEl.textContent = line;
+      } else {
+        logEl.textContent = line + "\n" + logEl.textContent;
+      }
+    }
+
+    function updateButtonsForPermission(permission) {
+      if (permission === "granted") {
+        statusEl.textContent = "Notifications are enabled ✅";
+        testBtn.disabled = false;
+        scheduleUltaBtn.disabled = false;
+        scheduleCustomBtn.disabled = false;
+      } else if (permission === "denied") {
+        statusEl.textContent = "Notifications are blocked ❌. Enable them in your browser settings.";
+        testBtn.disabled = true;
+        scheduleUltaBtn.disabled = true;
+        scheduleCustomBtn.disabled = true;
+      } else {
+        statusEl.textContent = "Notifications are not yet allowed. Click 'Enable Notifications'.";
+        testBtn.disabled = true;
+        scheduleUltaBtn.disabled = true;
+        scheduleCustomBtn.disabled = true;
+      }
+    }
+
+    function initDefaultUltaDate() {
+      const defaultDate = new Date(2026, 0, 21, 9, 0, 0);
+      const isoLocal = defaultDate.toISOString().slice(0, 16);
+      ultaDateTimeInput.value = isoLocal;
+    }
+
+    function scheduleNotification(targetDate, title, body) {
+      const now = new Date();
+      const delay = targetDate.getTime() - now.getTime();
+
+      if (isNaN(targetDate.getTime())) {
+        alert("Please select a valid date and time.");
+        return;
+      }
+
+      if (delay <= 0) {
+        alert("That time is in the past. Pick a future time.");
+        return;
+      }
+
+      const MAX_DELAY = 2147483647;
+      if (delay > MAX_DELAY) {
+        alert("That reminder is too far in the future. Try within 24 days.");
+        return;
+      }
+
+      log(`Reminder scheduled for ${targetDate.toString()} — \"${title}\"`);
+
+      setTimeout(() => {
+        if (Notification.permission === "granted") {
+          new Notification(title, { body });
+        } else {
+          alert(`Reminder: ${title}\n\n${body}`);
+        }
+      }, delay);
+    }
+
+    enableBtn.addEventListener("click", () => {
+      if (!("Notification" in window)) {
+        alert("This browser does not support notifications.");
+        return;
+      }
+
+      Notification.requestPermission().then(permission => {
+        updateButtonsForPermission(permission);
+        if (permission === "granted") log("Notification permission granted.");
+        else if (permission === "denied") log("Notification permission denied.");
+        else log("Notification permission dismissed.");
+      });
+    });
+
+    testBtn.addEventListener("click", () => {
+      if (Notification.permission !== "granted") {
+        alert("Enable notifications first.");
+        return;
+      }
+      new Notification("Test Notification", {
+        body: "If you see this, your Ulta reminder page works."
+      });
+      log("Test notification sent.");
+    });
+
+    scheduleUltaBtn.addEventListener("click", () => {
+      const value = ultaDateTimeInput.value;
+      if (!value) {
+        alert("Pick a date/time first.");
+        return;
+      }
+      const targetDate = new Date(value);
+      scheduleNotification(targetDate, "Ulta Beauty 2026 Tickets", "Time to check Ulta ticket drops.");
+    });
+
+    scheduleCustomBtn.addEventListener("click", () => {
+      const title = customTitleInput.value.trim() || "Reminder";
+      const body = customBodyInput.value.trim() || "You scheduled this reminder.";
+      const value = customDateTimeInput.value;
+      if (!value) {
+        alert("Pick a date/time.");
+        return;
+      }
+      const targetDate = new Date(value);
+      scheduleNotification(targetDate, title, body);
+    });
+
+    window.addEventListener("load", () => {
+      initDefaultUltaDate();
+      if ("Notification" in window) updateButtonsForPermission(Notification.permission);
+      else statusEl.textContent = "Your browser does not support notifications.";
+    });
+  </script>
+</body>
+</html>
