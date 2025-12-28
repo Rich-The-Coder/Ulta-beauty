@@ -1,0 +1,29 @@
+name: Ulta Reminder
+
+on:
+  schedule:
+    # Runs every day at 9:00 AM Eastern (14:00 UTC)
+    - cron: "0 14 * * *"
+  # Lets you run it manually with the "Run workflow" button
+  workflow_dispatch:
+
+jobs:
+  run-reminder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Run reminder script
+        env:
+          OUTLOOK_EMAIL: ${{ secrets.OUTLOOK_EMAIL }}
+          OUTLOOK_PASSWORD: ${{ secrets.OUTLOOK_PASSWORD }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          SMS_EMAIL: ${{ secrets.SMS_EMAIL }}
+        run: python ulta_reminder.py
